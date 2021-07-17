@@ -42,7 +42,6 @@ const ChoresList = ({ data, onToggleComplete }) => {
     );
     return sortedData;
   }, [data, sortConfigIndex, filterConfigIndex]);
-  console.log(data.map(({ id }) => id).join(""));
   return (
     <Box className="container">
       <Box>

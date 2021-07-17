@@ -7,6 +7,13 @@ import reportWebVitals from "./reportWebVitals";
 import { createTheme, ThemeProvider } from "@material-ui/core";
 import lightBlue from "@material-ui/core/colors/lightBlue";
 
+import { ApolloClient, InMemoryCache, ApolloProvider } from "@apollo/client";
+
+const apolloClient = new ApolloClient({
+  uri: "https://api-eu-central-1.graphcms.com/v2/ckr6nzcgj0qkk01xjfghf44wb/master",
+  cache: new InMemoryCache(),
+});
+
 const theme = createTheme({
   typography: {
     fontFamily: ['"Poppins"', "Arial", "sans-serif"].join(","),
@@ -19,7 +26,9 @@ const theme = createTheme({
 ReactDOM.render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
-      <App />
+      <ApolloProvider client={apolloClient}>
+        <App />
+      </ApolloProvider>
     </ThemeProvider>
   </React.StrictMode>,
   document.getElementById("root")

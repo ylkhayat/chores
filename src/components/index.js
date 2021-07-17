@@ -1,4 +1,6 @@
-import React from "react";
+import { useQuery } from "@apollo/client";
+import React, { useState } from "react";
+import { FETCH_CHORES } from "../services";
 import ChoresList from "./ChoresList";
 
 const _data = [
@@ -11,10 +13,14 @@ const _data = [
 function Chores() {
   const onToggleComplete = (currentId) => {};
   const onAddTodo = (content) => {};
+  const { data, loading, fetchMore } = useQuery(FETCH_CHORES, {
+    variables: { offset: "", limit: 10 },
+  });
+  console.log(loading, data);
   return (
     <div className="App">
       <header className="App-header">
-        <ChoresList data={_data} onToggleComplete={onToggleComplete} />
+        <ChoresList data={data.chores} onToggleComplete={onToggleComplete} />
       </header>
     </div>
   );
