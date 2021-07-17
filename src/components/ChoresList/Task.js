@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { forwardRef } from "react";
 import Typography from "@material-ui/core/Typography";
 import Checkbox from "@material-ui/core/Checkbox";
 import { Box, IconButton } from "@material-ui/core";
@@ -8,20 +7,54 @@ import EditIcon from "@material-ui/icons/Edit";
 import SaveIcon from "@material-ui/icons/Save";
 import CancelIcon from "@material-ui/icons/Cancel";
 import CssTextField from "../CssTextField";
-import { TransitionGroup } from "react-transition-group";
+import { Flipped, spring } from "react-flip-toolkit";
 
-const Task = ({ id, content, completed, ...props }, ref) => {
+const onElementAppear = (el, index) =>
+  spring({
+    onUpdate: (val) => {
+      el.style.opacity = val;
+    },
+    delay: index * 50,
+  });
+
+const onExit = (type) => (el, index, removeElement) => {
+  spring({
+    config: { overshootClamping: true },
+    onUpdate: (val) => {
+      el.style.transform = `scale${type === "grid" ? "X" : "Y"}(${1 - val})`;
+    },
+    delay: index * 50,
+    onComplete: removeElement,
+  });
+
+  return () => {
+    el.style.opacity = "";
+    removeElement();
+  };
+};
+
+const onGridExit = onExit("grid");
+const onListExit = onExit("list");
+
+const Task = ({ flipId, id, content, completed, ...props }) => {
   const [focused, setIsFocused] = useState(false);
   const [isEdit, setIsEditing] = useState(false);
   const onEdit = () => setIsEditing((prevIsEditing) => !prevIsEditing);
   const onToggleComplete = () => props.onToggleComplete(id);
+
+  const shouldFlip = (prev, current) => {
+    if (prev.type !== current.type) {
+      return true;
+    }
+    return false;
+  };
+
   return (
-    <TransitionGroup
-      transitionName="dialog"
-      transitionAppear={true}
-      transitionAppearTimeout={500}
-      transitionEnter={false}
-      transitionLeave={false}
+    <Flipped
+      flipId={flipId}
+      onAppear={onElementAppear}
+      onExit={onListExit}
+      key={flipId}
     >
       {isEdit ? (
         <Box
@@ -83,8 +116,8 @@ const Task = ({ id, content, completed, ...props }, ref) => {
           </Box>
         </Box>
       )}
-    </TransitionGroup>
+    </Flipped>
   );
 };
 
-export default forwardRef(Task);
+export default React.memo(Task);

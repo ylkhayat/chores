@@ -42,6 +42,7 @@ const ChoresList = ({ data, onToggleComplete }) => {
     );
     return sortedData;
   }, [data, sortConfigIndex, filterConfigIndex]);
+  console.log(data.map(({ id }) => id).join(""));
   return (
     <Box className="container">
       <Box>
@@ -78,28 +79,24 @@ const ChoresList = ({ data, onToggleComplete }) => {
         renderRightComponent={renderChoresRightComponent}
       >
         <Flipper
-          flipKey={JSON.stringify(evaledData)}
+          flipKey={data.map(({ id }) => id).join("")}
           spring="noWobble"
           staggerConfig={{
             default: {
-              reverse: true,
+              reverse: false,
               speed: 1,
             },
           }}
-          decisionData={evaledData}
           className="flip-move-container"
         >
           {/* <FlipMove className="flip-move-container" key={evaledData.join("")}> */}
           {evaledData?.map((chore) => {
-            console.log(chore);
             return (
-              <Flipped flipId={chore.id}>
-                <Task
-                  key={`${chore.id}`}
-                  {...chore}
-                  onToggleComplete={onToggleComplete}
-                />
-              </Flipped>
+              <Task
+                flipId={chore.id}
+                {...chore}
+                onToggleComplete={onToggleComplete}
+              />
             );
           })}
         </Flipper>
