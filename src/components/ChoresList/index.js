@@ -8,6 +8,7 @@ import CssTextField from "../CssTextField";
 import { useMemo, useState } from "react";
 import orderBy from "lodash/orderBy";
 import { Flipper, Flipped } from "react-flip-toolkit";
+import Pagination from "@material-ui/core/Pagination";
 
 const filterConfig = [
   { name: "All", operator: (chore) => !!chore },
@@ -100,6 +101,7 @@ const ChoresList = ({ data, onToggleComplete }) => {
           })}
         </Flipper>
         {/* </FlipMove> */}
+        <Pagination count={10} shape="rounded" />
       </Section>
     </Box>
   );

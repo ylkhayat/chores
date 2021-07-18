@@ -90,3 +90,7 @@
   background-color: white;
   border-radius: 4px;
 }
+
+.MuiPaginationItem-rounded {
+  color: white;
+}

@@ -20,7 +20,10 @@ function Chores() {
   return (
     <div className="App">
       <header className="App-header">
-        <ChoresList data={data.chores} onToggleComplete={onToggleComplete} />
+        <ChoresList
+          data={data?.chores ?? _data}
+          onToggleComplete={onToggleComplete}
+        />
       </header>
     </div>
   );
