@@ -6,9 +6,12 @@ import { IconButton, Typography } from "@material-ui/core";
 import SendIcon from "@material-ui/icons/Send";
 import CssTextField from "../CssTextField";
 import { useMemo, useState } from "react";
-import orderBy from "lodash/orderBy";
+import pick from "lodash/pick";
 import { Flipper, Flipped } from "react-flip-toolkit";
 import Pagination from "@material-ui/core/Pagination";
+import React, { useEffect } from "react";
+import { useQuery, useMutation } from "@apollo/client";
+import { FETCH_CHORES, UPDATE_CHORE } from "../../services";
 
 const filterConfig = [
   { name: "All", operator: (chore) => !!chore },
@@ -16,14 +19,63 @@ const filterConfig = [
 ];
 
 const sortConfig = [
-  { name: "Content", field: "content" },
-  { name: "Completed", field: "completed" },
-  { name: "Date Modified", field: "created_at" },
+  { name: "Content", orderBy: "content_ASC" },
+  { name: "Completed", orderBy: "completed_ASC" },
+  { name: "Date Modified", orderBy: "createdAt_ASC" },
 ];
 
-const ChoresList = ({ data, onToggleComplete }) => {
+const data = [
+  { id: 1, content: "Bananas", completed: true },
+  { id: 2, content: "Burritos", completed: false },
+  { id: 3, content: "Cameron", completed: true },
+  { id: 4, content: "Heya", completed: false },
+];
+const ChoresList = () => {
   const [sortConfigIndex, setSortConfigIndex] = useState(0);
   const [filterConfigIndex, setFilterConfigIndex] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(2);
+
+  const { data: apolloData } = useQuery(FETCH_CHORES, {
+    variables: {
+      offset: (currentPage - 1) * perPage,
+      limit: parseInt(perPage) || 1,
+      orderBy: sortConfig[sortConfigIndex].orderBy,
+    },
+  });
+  const [updateChore, { data }] = useMutation(UPDATE_CHORE);
+  const onAddTodo = (content) => {};
+  const onUpdateChore = (currentId, chore) => {
+    updateChore({
+      variables: {
+        id: currentId,
+        completed: chore.completed,
+        content: chore.content,
+      },
+    });
+  };
+
+  const { numPages } = useMemo(() => {
+    if (apolloData?.choresConnection) {
+      const {
+        aggregate: { count },
+      } = apolloData?.choresConnection;
+      const numPages = Math.ceil(count / perPage);
+      return { numPages };
+    } else {
+      return { numPages: 0 };
+    }
+  }, [apolloData?.choresConnection, perPage]);
+
+  const onPaginationChange = (_, page) => {
+    setCurrentPage(page);
+  };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortConfigIndex, filterConfigIndex, perPage]);
+
+  useEffect(() => {}, [perPage]);
 
   const renderChoresRightComponent = () => (
     <Box display="flex" alignItems="flex-end">
@@ -34,15 +86,19 @@ const ChoresList = ({ data, onToggleComplete }) => {
     </Box>
   );
 
-  const evaledData = useMemo(() => {
-    const filteredData = data.filter(filterConfig[filterConfigIndex].operator);
-    const sortedData = orderBy(
-      filteredData,
-      [sortConfig[sortConfigIndex].field],
-      ["desc"]
+  const { paginatedData } = useMemo(() => {
+    if (!apolloData?.chores) return { filteredData: [], paginatedData: [] };
+    const filteredData = apolloData?.chores.filter(
+      filterConfig[filterConfigIndex].operator
     );
-    return sortedData;
-  }, [data, sortConfigIndex, filterConfigIndex]);
+
+    const paginatedData = filteredData.slice(
+      (currentPage - 1) * perPage,
+      currentPage * perPage
+    );
+    return { filteredData, paginatedData };
+  }, [apolloData, filterConfigIndex, currentPage, perPage]);
+
   return (
     <Box className="container">
       <Box>
@@ -59,6 +115,7 @@ const ChoresList = ({ data, onToggleComplete }) => {
             </Typography>
           ))}
         </Section>
+
         <Section title="Sort" className="filter-container">
           {sortConfig.map((config, index) => (
             <Typography
@@ -72,36 +129,62 @@ const ChoresList = ({ data, onToggleComplete }) => {
             </Typography>
           ))}
         </Section>
+        <Section title="Per Page" className="filter-container">
+          <CssTextField
+            color="primary"
+            variant="outlined"
+            value={perPage}
+            onChange={(event) => {
+              setPerPage(event.target.value);
+            }}
+            inputProps={{ style: { fontFamily: "nunito", color: "white" } }}
+          />
+        </Section>
       </Box>
       <Section
         title="Chores"
         className="chores-container"
         renderRightComponent={renderChoresRightComponent}
       >
-        <Flipper
-          flipKey={data.map(({ id }) => id).join("")}
-          spring="noWobble"
-          staggerConfig={{
-            default: {
-              reverse: false,
-              speed: 1,
-            },
-          }}
-          className="flip-move-container"
+        <Box
+          display="flex"
+          flexDirection="column"
+          width="100%"
+          height="100%"
+          justifyContent="space-between"
         >
-          {/* <FlipMove className="flip-move-container" key={evaledData.join("")}> */}
-          {evaledData?.map((chore) => {
-            return (
-              <Task
-                flipId={chore.id}
-                {...chore}
-                onToggleComplete={onToggleComplete}
-              />
-            );
-          })}
-        </Flipper>
-        {/* </FlipMove> */}
-        <Pagination count={10} shape="rounded" />
+          <Flipper
+            flipKey={apolloData?.chores?.map(({ id }) => id).join("")}
+            spring="noWobble"
+            staggerConfig={{
+              default: {
+                reverse: false,
+                speed: 1,
+              },
+            }}
+            className="flip-move-container"
+          >
+            {/* <FlipMove className="flip-move-container" key={evaledData.join("")}> */}
+            {paginatedData?.map((chore) => {
+              return (
+                <Task
+                  flipId={chore.id}
+                  {...chore}
+                  onUpdateChore={onUpdateChore}
+                />
+              );
+            })}
+          </Flipper>
+          {/* </FlipMove> */}
+          <Box alignSelf="center">
+            <Pagination
+              count={numPages}
+              shape="rounded"
+              color="secondary"
+              onChange={onPaginationChange}
+            />
+          </Box>
+        </Box>
       </Section>
     </Box>
   );

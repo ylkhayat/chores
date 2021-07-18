@@ -91,6 +91,6 @@
   border-radius: 4px;
 }
 
-.MuiPaginationItem-rounded {
-  color: white;
+.MuiPaginationItem-root {
+  color: white !important;
 }

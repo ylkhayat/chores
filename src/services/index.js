@@ -1,21 +1,32 @@
 import { gql } from "@apollo/client";
 
 export const FETCH_CHORES = gql`
-  query GetChores($offset: String, $limit: Int!) {
-    choresConnection(after: $offset, first: $limit) {
-      edges {
-        cursor
-        node {
-          completed
-          content
-          createdAt
-          id
-        }
+  query GetChores($offset: Int!, $limit: Int!, $orderBy: ChoreOrderByInput!) {
+    chores(orderBy: $orderBy, skip: $offset, first: $limit) {
+      completed
+      content
+      createdAt
+      id
+    }
+    choresConnection {
+      aggregate {
+        count
       }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
+    }
+  }
+`;
+
+export const UPDATE_CHORE = gql`
+  mutation UpdateChore($content: String, $completed: Boolean!, $id: ID!) {
+    __typename
+    updateChore(
+      data: { completed: $completed, content: $content }
+      where: { id: $id }
+    ) {
+      completed
+      content
+      createdAt
+      id
     }
   }
 `;

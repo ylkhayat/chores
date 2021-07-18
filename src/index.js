@@ -6,12 +6,30 @@ import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import { createTheme, ThemeProvider } from "@material-ui/core";
 import lightBlue from "@material-ui/core/colors/lightBlue";
+import pick from "lodash/pick";
 
 import { ApolloClient, InMemoryCache, ApolloProvider } from "@apollo/client";
 
 const apolloClient = new ApolloClient({
   uri: "https://api-eu-central-1.graphcms.com/v2/ckr6nzcgj0qkk01xjfghf44wb/master",
-  cache: new InMemoryCache(),
+  cache: new InMemoryCache({
+    typePolicies: {
+      Query: {
+        fields: {
+          chores: {
+            keyArgs: false,
+            merge(existing, incoming, { args: { offset = 0 } }) {
+              const merged = existing ? existing.slice(0) : [];
+              for (let i = 0; i < incoming.length; ++i) {
+                merged[offset + i] = incoming[i];
+              }
+              return merged;
+            },
+          },
+        },
+      },
+    },
+  }),
 });
 
 const theme = createTheme({

@@ -39,14 +39,29 @@ const onListExit = onExit("list");
 const Task = ({ flipId, id, content, completed, ...props }) => {
   const [focused, setIsFocused] = useState(false);
   const [isEdit, setIsEditing] = useState(false);
+  const [stateCompleted, setStateCompleted] = useState(completed);
+  const [stateContent, setStateContent] = useState(content);
   const onEdit = () => setIsEditing((prevIsEditing) => !prevIsEditing);
-  const onToggleComplete = () => props.onToggleComplete(id);
+  const onToggleComplete = () => {
+    props.onUpdateChore(id, {
+      content: stateContent,
+      completed: !stateCompleted,
+    });
+    setStateCompleted((prevIsCompleted) => !prevIsCompleted);
+  };
 
   const shouldFlip = (prev, current) => {
     if (prev.type !== current.type) {
       return true;
     }
     return false;
+  };
+  const onSave = () => {
+    props.onUpdateChore(id, {
+      content: stateContent,
+      completed: stateCompleted,
+    });
+    onEdit();
   };
 
   return (
@@ -71,7 +86,8 @@ const Task = ({ flipId, id, content, completed, ...props }) => {
               color="primary"
               variant="standard"
               autoFocus
-              value={content}
+              onChange={(event) => setStateContent(event.target.value)}
+              value={stateContent}
               inputProps={{ style: { fontFamily: "nunito", color: "white" } }}
             />
             <Box>
@@ -80,7 +96,7 @@ const Task = ({ flipId, id, content, completed, ...props }) => {
                   <CancelIcon />
                 </IconButton>
               )}
-              <IconButton color="primary" component="span">
+              <IconButton color="primary" component="span" onClick={onSave}>
                 <SaveIcon />
               </IconButton>
             </Box>
@@ -97,12 +113,12 @@ const Task = ({ flipId, id, content, completed, ...props }) => {
           }}
         >
           <Checkbox
-            checked={completed}
+            checked={stateCompleted}
             onChange={onToggleComplete}
             inputProps={{ "aria-label": "primary checkbox" }}
           />
           <Box className="task-sub-container">
-            <Typography color="white">{content}</Typography>
+            <Typography color="white">{stateContent}</Typography>
             <Box>
               {focused && (
                 <IconButton color="primary" component="span" onClick={onEdit}>
