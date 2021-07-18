@@ -1,7 +1,7 @@
 import { useMutation } from "@apollo/client";
 import { Box, Checkbox, IconButton, Typography } from "@material-ui/core";
 import Modal from "@material-ui/core/Modal";
-import React, { forwardRef, useImperativeHandle } from "react";
+import React, { forwardRef, useImperativeHandle, useState } from "react";
 import { CREATE_CHORE, PUBLISH_CHORE } from "../../services";
 import CssTextField from "../CssTextField";
 import Section from "../Section";
