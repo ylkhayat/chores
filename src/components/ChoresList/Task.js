@@ -7,41 +7,18 @@ import EditIcon from "@material-ui/icons/Edit";
 import SaveIcon from "@material-ui/icons/Save";
 import CancelIcon from "@material-ui/icons/Cancel";
 import CssTextField from "../CssTextField";
-import { Flipped, spring } from "react-flip-toolkit";
-
-const onElementAppear = (el, index) =>
-  spring({
-    onUpdate: (val) => {
-      el.style.opacity = val;
-    },
-    delay: index * 50,
-  });
-
-const onExit = (type) => (el, index, removeElement) => {
-  spring({
-    config: { overshootClamping: true },
-    onUpdate: (val) => {
-      el.style.transform = `scale${type === "grid" ? "X" : "Y"}(${1 - val})`;
-    },
-    delay: index * 50,
-    onComplete: removeElement,
-  });
-
-  return () => {
-    el.style.opacity = "";
-    removeElement();
-  };
-};
-
-const onGridExit = onExit("grid");
-const onListExit = onExit("list");
+import { Flipped } from "react-flip-toolkit";
 
 const Task = ({ flipId, id, content, completed, ...props }) => {
   const [focused, setIsFocused] = useState(false);
   const [isEdit, setIsEditing] = useState(false);
   const [stateCompleted, setStateCompleted] = useState(completed);
   const [stateContent, setStateContent] = useState(content);
-  const onEdit = () => setIsEditing((prevIsEditing) => !prevIsEditing);
+  const onEdit = () => {
+    setIsEditing((prevIsEditing) => !prevIsEditing);
+    setStateCompleted(completed);
+    setStateContent(content);
+  };
   const onToggleComplete = () => {
     props.onUpdateChore(id, {
       content: stateContent,
@@ -50,27 +27,22 @@ const Task = ({ flipId, id, content, completed, ...props }) => {
     setStateCompleted((prevIsCompleted) => !prevIsCompleted);
   };
 
-  const shouldFlip = (prev, current) => {
-    if (prev.type !== current.type) {
-      return true;
-    }
-    return false;
-  };
+  // const shouldFlip = (prev, current) => {
+  //   if (prev.type !== current.type) {
+  //     return true;
+  //   }
+  //   return false;
+  // };
   const onSave = () => {
     props.onUpdateChore(id, {
       content: stateContent,
       completed: stateCompleted,
     });
-    onEdit();
+    setIsEditing((prevIsEditing) => !prevIsEditing);
   };
 
   return (
-    <Flipped
-      flipId={flipId}
-      onAppear={onElementAppear}
-      onExit={onListExit}
-      key={flipId}
-    >
+    <Flipped flipId={flipId} key={flipId}>
       {isEdit ? (
         <Box
           className="task-container"
@@ -81,16 +53,22 @@ const Task = ({ flipId, id, content, completed, ...props }) => {
             setIsFocused(false);
           }}
         >
-          <Box className="task-sub-container" paddingLeft="14px">
+          <Box className="task-sub-container" paddingLeft="14px" width="100%">
             <CssTextField
               color="primary"
               variant="standard"
+              multiline
               autoFocus
               onChange={(event) => setStateContent(event.target.value)}
               value={stateContent}
-              inputProps={{ style: { fontFamily: "nunito", color: "white" } }}
+              style={{ width: "80%" }}
+              inputProps={{
+                style: {
+                  color: "white",
+                },
+              }}
             />
-            <Box>
+            <Box display="flex">
               {focused && (
                 <IconButton color="primary" component="span" onClick={onEdit}>
                   <CancelIcon />
@@ -118,8 +96,10 @@ const Task = ({ flipId, id, content, completed, ...props }) => {
             inputProps={{ "aria-label": "primary checkbox" }}
           />
           <Box className="task-sub-container">
-            <Typography color="white">{stateContent}</Typography>
-            <Box>
+            <Typography color="white" width="80%">
+              {stateContent}
+            </Typography>
+            <Box display="flex">
               {focused && (
                 <IconButton color="primary" component="span" onClick={onEdit}>
                   <EditIcon />

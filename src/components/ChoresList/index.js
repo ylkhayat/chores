@@ -6,12 +6,15 @@ import { IconButton, Typography } from "@material-ui/core";
 import SendIcon from "@material-ui/icons/Send";
 import CssTextField from "../CssTextField";
 import { useMemo, useState } from "react";
-import pick from "lodash/pick";
-import { Flipper, Flipped } from "react-flip-toolkit";
 import Pagination from "@material-ui/core/Pagination";
 import React, { useEffect } from "react";
 import { useQuery, useMutation } from "@apollo/client";
-import { FETCH_CHORES, UPDATE_CHORE } from "../../services";
+import {
+  CREATE_CHORE,
+  FETCH_CHORES,
+  PUBLISH_CHORE,
+  UPDATE_CHORE,
+} from "../../services";
 
 const filterConfig = [
   { name: "All", operator: (chore) => !!chore },
@@ -20,40 +23,28 @@ const filterConfig = [
 
 const sortConfig = [
   { name: "Content", orderBy: "content_ASC" },
-  { name: "Completed", orderBy: "completed_ASC" },
+  { name: "Completed", orderBy: "completed_DESC" },
   { name: "Date Modified", orderBy: "createdAt_ASC" },
 ];
 
-const data = [
-  { id: 1, content: "Bananas", completed: true },
-  { id: 2, content: "Burritos", completed: false },
-  { id: 3, content: "Cameron", completed: true },
-  { id: 4, content: "Heya", completed: false },
-];
 const ChoresList = () => {
-  const [sortConfigIndex, setSortConfigIndex] = useState(0);
+  const [sortConfigIndex, setSortConfigIndex] = useState(2);
   const [filterConfigIndex, setFilterConfigIndex] = useState(0);
+  const [newChoreContent, setNewChoreContent] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [perPage, setPerPage] = useState(2);
+  const [perPage, setPerPage] = useState(5);
 
-  const { data: apolloData } = useQuery(FETCH_CHORES, {
-    variables: {
-      offset: (currentPage - 1) * perPage,
-      limit: parseInt(perPage) || 1,
-      orderBy: sortConfig[sortConfigIndex].orderBy,
-    },
-  });
-  const [updateChore, { data }] = useMutation(UPDATE_CHORE);
-  const onAddTodo = (content) => {};
-  const onUpdateChore = (currentId, chore) => {
-    updateChore({
+  const { data: apolloData, fetchMore } =
+    useQuery(FETCH_CHORES, {
       variables: {
-        id: currentId,
-        completed: chore.completed,
-        content: chore.content,
+        offset: (currentPage - 1) * perPage,
+        limit: parseInt(perPage) || 1,
+        orderBy: sortConfig[sortConfigIndex].orderBy,
       },
-    });
-  };
+    }) || {};
+  const [updateChore] = useMutation(UPDATE_CHORE);
+  const [publishChore] = useMutation(PUBLISH_CHORE);
+  const [createChore] = useMutation(CREATE_CHORE);
 
   const { numPages } = useMemo(() => {
     if (apolloData?.choresConnection) {
@@ -67,37 +58,81 @@ const ChoresList = () => {
     }
   }, [apolloData?.choresConnection, perPage]);
 
+  const onAddTodo = () => {
+    createChore({
+      variables: { content: newChoreContent, completed: false },
+    }).then((res) => {
+      setNewChoreContent("");
+      publishChore({ variables: { id: res.data.createChore.id } }).then(() => {
+        fetchMore({
+          variables: {
+            orderBy: sortConfig[sortConfigIndex].orderBy,
+          },
+        }).then(({ data }) => {
+          setCurrentPage(
+            Math.ceil(data.choresConnection.aggregate.count / perPage)
+          );
+        });
+      });
+    });
+  };
+  const onUpdateChore = (currentId, chore) => {
+    updateChore({
+      variables: {
+        id: currentId,
+        completed: chore.completed,
+        content: chore.content,
+      },
+    });
+  };
+
   const onPaginationChange = (_, page) => {
     setCurrentPage(page);
   };
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [sortConfigIndex, filterConfigIndex, perPage]);
+    fetchMore?.({
+      variables: {
+        offset: 0,
+        limit: parseInt(perPage) || 1,
+        orderBy: sortConfig[sortConfigIndex].orderBy,
+      },
+    });
+  }, [sortConfigIndex, filterConfigIndex, perPage, fetchMore]);
 
-  useEffect(() => {}, [perPage]);
+  useEffect(() => {
+    fetchMore?.({
+      variables: {
+        offset: (currentPage - 1) * perPage,
+        limit: parseInt(perPage) || 1,
+        orderBy: sortConfig[sortConfigIndex].orderBy,
+      },
+    });
+  }, [currentPage, fetchMore, perPage, sortConfigIndex]);
 
   const renderChoresRightComponent = () => (
     <Box display="flex" alignItems="flex-end">
-      <CssTextField color="primary" label="New Chore?" variant="standard" />
-      <IconButton color="primary" component="span">
+      <CssTextField
+        color="primary"
+        label="New Chore?"
+        variant="standard"
+        value={newChoreContent}
+        onChange={(event) => setNewChoreContent(event.target.value)}
+      />
+      <IconButton color="primary" component="span" onClick={onAddTodo}>
         <SendIcon />
       </IconButton>
     </Box>
   );
 
-  const { paginatedData } = useMemo(() => {
+  const { filteredData } = useMemo(() => {
     if (!apolloData?.chores) return { filteredData: [], paginatedData: [] };
     const filteredData = apolloData?.chores.filter(
       filterConfig[filterConfigIndex].operator
     );
-
-    const paginatedData = filteredData.slice(
-      (currentPage - 1) * perPage,
-      currentPage * perPage
-    );
-    return { filteredData, paginatedData };
-  }, [apolloData, filterConfigIndex, currentPage, perPage]);
+    return { filteredData };
+  }, [apolloData, filterConfigIndex]);
 
   return (
     <Box className="container">
@@ -153,31 +188,24 @@ const ChoresList = () => {
           height="100%"
           justifyContent="space-between"
         >
-          <Flipper
-            flipKey={apolloData?.chores?.map(({ id }) => id).join("")}
-            spring="noWobble"
-            staggerConfig={{
-              default: {
-                reverse: false,
-                speed: 1,
-              },
-            }}
+          <FlipMove
             className="flip-move-container"
+            key={apolloData?.chores?.map(({ id }) => id).join("")}
           >
-            {/* <FlipMove className="flip-move-container" key={evaledData.join("")}> */}
-            {paginatedData?.map((chore) => {
+            {filteredData?.map((chore) => {
               return (
                 <Task
+                  key={chore.id}
                   flipId={chore.id}
                   {...chore}
                   onUpdateChore={onUpdateChore}
                 />
               );
             })}
-          </Flipper>
-          {/* </FlipMove> */}
+          </FlipMove>
           <Box alignSelf="center">
             <Pagination
+              page={currentPage}
               count={numPages}
               shape="rounded"
               color="secondary"
