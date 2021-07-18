@@ -1,15 +1,22 @@
 import { gql } from "@apollo/client";
 
 export const FETCH_CHORES = gql`
-  query GetChores($offset: Int!, $limit: Int!, $orderBy: ChoreOrderByInput!) {
-    chores(orderBy: $orderBy, skip: $offset, first: $limit) {
+  query GetChores(
+    $offset: Int!
+    $limit: Int!
+    $orderBy: ChoreOrderByInput!
+    $where: ChoreWhereInput!
+  ) {
+    chores(orderBy: $orderBy, skip: $offset, first: $limit, where: $where) {
       completed
-      content
+      title
+      description
+      dueDate
       createdAt
       updatedAt
       id
     }
-    choresConnection {
+    choresConnection(where: $where) {
       aggregate {
         count
       }
@@ -18,20 +25,21 @@ export const FETCH_CHORES = gql`
 `;
 
 export const UPDATE_CHORE = gql`
-  mutation UpdateChore($content: String, $completed: Boolean!, $id: ID!) {
-    updateChore(
-      data: { completed: $completed, content: $content }
-      where: { id: $id }
-    ) {
+  mutation UpdateChore($data: ChoreCreateInput!, $id: ID!) {
+    updateChore(data: $data, where: { id: $id }) {
       id
       completed
-      content
+      title
+      description
+      dueDate
       createdAt
       updatedAt
     }
     publishChore(where: { id: $id }, to: PUBLISHED) {
       completed
-      content
+      title
+      description
+      dueDate
       createdAt
       updatedAt
       id
@@ -40,11 +48,13 @@ export const UPDATE_CHORE = gql`
 `;
 
 export const CREATE_CHORE = gql`
-  mutation CreateChore($content: String!, $completed: Boolean!) {
-    createChore(data: { completed: $completed, content: $content }) {
+  mutation CreateChore($data: ChoreCreateInput!) {
+    createChore(data: $data) {
       id
       completed
-      content
+      title
+      description
+      dueDate
       createdAt
       updatedAt
     }
@@ -55,7 +65,9 @@ export const PUBLISH_CHORE = gql`
   mutation PublishChore($id: ID!) {
     publishChore(where: { id: $id }, to: PUBLISHED) {
       completed
-      content
+      title
+      description
+      dueDate
       createdAt
       id
       updatedAt

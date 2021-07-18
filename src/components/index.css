@@ -94,3 +94,9 @@
 .MuiPaginationItem-root {
   color: white !important;
 }
+.modal-content-container {
+  position: absolute;
+  align-self: center;
+  right: 0;
+  left: 0;
+}

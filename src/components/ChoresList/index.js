@@ -1,24 +1,21 @@
 import Box from "@material-ui/core/Box";
-import FlipMove from "react-flip-move";
 import Task from "./Task";
 import Section from "../Section";
 import { IconButton, Typography } from "@material-ui/core";
 import SendIcon from "@material-ui/icons/Send";
 import CssTextField from "../CssTextField";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Pagination from "@material-ui/core/Pagination";
 import React, { useEffect } from "react";
 import { useQuery, useMutation } from "@apollo/client";
-import {
-  CREATE_CHORE,
-  FETCH_CHORES,
-  PUBLISH_CHORE,
-  UPDATE_CHORE,
-} from "../../services";
+import { FETCH_CHORES, UPDATE_CHORE } from "../../services";
+import { CircularProgress } from "@material-ui/core";
+import NewChore from "./NewChore";
 
 const filterConfig = [
-  { name: "All", operator: (chore) => !!chore },
-  { name: "Completed", operator: (chore) => chore.completed },
+  { name: "All", where: {} },
+  { name: "Completed", where: { completed: true } },
+  { name: "Not Completed", where: { completed: false } },
 ];
 
 const sortConfig = [
@@ -30,22 +27,23 @@ const sortConfig = [
 const ChoresList = () => {
   const [sortConfigIndex, setSortConfigIndex] = useState(2);
   const [filterConfigIndex, setFilterConfigIndex] = useState(0);
-  const [newChoreContent, setNewChoreContent] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(5);
 
-  const { data: apolloData, fetchMore } =
-    useQuery(FETCH_CHORES, {
-      variables: {
-        offset: (currentPage - 1) * perPage,
-        limit: parseInt(perPage) || 1,
-        orderBy: sortConfig[sortConfigIndex].orderBy,
-      },
-    }) || {};
+  const {
+    loading,
+    data: apolloData,
+    fetchMore,
+  } = useQuery(FETCH_CHORES, {
+    variables: {
+      offset: (currentPage - 1) * perPage,
+      limit: parseInt(perPage) || 1,
+      orderBy: sortConfig[sortConfigIndex].orderBy,
+      where: filterConfig[filterConfigIndex].where,
+    },
+  }) || {};
   const [updateChore] = useMutation(UPDATE_CHORE);
-  const [publishChore] = useMutation(PUBLISH_CHORE);
-  const [createChore] = useMutation(CREATE_CHORE);
-
+  const newChoreModalRef = useRef(null);
   const { numPages } = useMemo(() => {
     if (apolloData?.choresConnection) {
       const {
@@ -58,24 +56,6 @@ const ChoresList = () => {
     }
   }, [apolloData?.choresConnection, perPage]);
 
-  const onAddTodo = () => {
-    createChore({
-      variables: { content: newChoreContent, completed: false },
-    }).then((res) => {
-      setNewChoreContent("");
-      publishChore({ variables: { id: res.data.createChore.id } }).then(() => {
-        fetchMore({
-          variables: {
-            orderBy: sortConfig[sortConfigIndex].orderBy,
-          },
-        }).then(({ data }) => {
-          setCurrentPage(
-            Math.ceil(data.choresConnection.aggregate.count / perPage)
-          );
-        });
-      });
-    });
-  };
   const onUpdateChore = (currentId, chore) => {
     updateChore({
       variables: {
@@ -91,13 +71,14 @@ const ChoresList = () => {
   };
 
   useEffect(() => {
-    setCurrentPage(1);
     fetchMore?.({
       variables: {
         offset: 0,
         limit: parseInt(perPage) || 1,
         orderBy: sortConfig[sortConfigIndex].orderBy,
       },
+    }).then(() => {
+      setCurrentPage(1);
     });
   }, [sortConfigIndex, filterConfigIndex, perPage, fetchMore]);
 
@@ -113,14 +94,11 @@ const ChoresList = () => {
 
   const renderChoresRightComponent = () => (
     <Box display="flex" alignItems="flex-end">
-      <CssTextField
+      <IconButton
         color="primary"
-        label="New Chore?"
-        variant="standard"
-        value={newChoreContent}
-        onChange={(event) => setNewChoreContent(event.target.value)}
-      />
-      <IconButton color="primary" component="span" onClick={onAddTodo}>
+        component="span"
+        onClick={() => newChoreModalRef.current.open()}
+      >
         <SendIcon />
       </IconButton>
     </Box>
@@ -128,11 +106,9 @@ const ChoresList = () => {
 
   const { filteredData } = useMemo(() => {
     if (!apolloData?.chores) return { filteredData: [], paginatedData: [] };
-    const filteredData = apolloData?.chores.filter(
-      filterConfig[filterConfigIndex].operator
-    );
-    return { filteredData };
-  }, [apolloData, filterConfigIndex]);
+
+    return { filteredData: apolloData?.chores };
+  }, [apolloData]);
 
   return (
     <Box className="container">
@@ -188,21 +164,18 @@ const ChoresList = () => {
           height="100%"
           justifyContent="space-between"
         >
-          <FlipMove
-            className="flip-move-container"
-            key={apolloData?.chores?.map(({ id }) => id).join("")}
-          >
+          <Box className="flip-move-container">
             {filteredData?.map((chore) => {
               return (
                 <Task
                   key={chore.id}
                   flipId={chore.id}
-                  {...chore}
+                  chore={chore}
                   onUpdateChore={onUpdateChore}
                 />
               );
             })}
-          </FlipMove>
+          </Box>
           <Box alignSelf="center">
             <Pagination
               page={currentPage}
@@ -213,7 +186,28 @@ const ChoresList = () => {
             />
           </Box>
         </Box>
+        {loading && (
+          <Box position="relative" bottom={0}>
+            <CircularProgress color="secondary" />
+          </Box>
+        )}
       </Section>
+      <NewChore
+        ref={newChoreModalRef}
+        fetchMore={fetchMore}
+        sortConfig={sortConfig}
+        sortConfigIndex={sortConfigIndex}
+        perPage={perPage}
+        setCurrentPage={setCurrentPage}
+      />
+      {/* <PreviewChore
+        ref={newChoreModalRef}
+        fetchMore={fetchMore}
+        sortConfig={sortConfig}
+        sortConfigIndex={sortConfigIndex}
+        perPage={perPage}
+        setCurrentPage={setCurrentPage}
+      /> */}
     </Box>
   );
 };
