@@ -36,7 +36,13 @@ const Task = ({ flipId, chore, ...props }, _) => {
   );
 
   return (
-    <Tooltip title={`Due within ${minutesLeftString}`}>
+    <Tooltip
+      title={
+        minutesLeft < 0
+          ? `This chore is past due`
+          : `Due within ${minutesLeftString}`
+      }
+    >
       <Box
         className="task-container"
         onMouseEnter={(e) => {
