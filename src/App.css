@@ -55,7 +55,23 @@
 
 .chores-container {
   width: 50vw;
-  height: 60vh;
+  height: 50vh;
+}
+
+@media (max-width: 500px) {
+  .container {
+    flex-direction: column;
+    display: flex;
+  }
+  .tools-container {
+    flex-direction: row;
+    display: flex;
+  }
+  .chores-container {
+    width: 80vw;
+    height: 50vh;
+    align-self: center;
+  }
 }
 
 .filter-container {

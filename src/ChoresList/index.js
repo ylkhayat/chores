@@ -143,7 +143,7 @@ const ChoresList = () => {
 
   return (
     <Box className="container">
-      <Box>
+      <Box className="tools-container">
         <Section title="Filter" className="filter-container">
           {filterConfig.map((config, index) => (
             <Typography
