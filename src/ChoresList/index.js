@@ -1,16 +1,17 @@
 import Box from "@material-ui/core/Box";
 import Task from "./Task";
-import Section from "../Section";
+import Section from "../components/Section";
 import { IconButton, Typography } from "@material-ui/core";
-import SendIcon from "@material-ui/icons/Send";
-import CssTextField from "../CssTextField";
+import AddIcon from "@material-ui/icons/Add";
+import CssTextField from "../components/CssTextField";
 import { useMemo, useRef, useState } from "react";
 import Pagination from "@material-ui/core/Pagination";
 import React, { useEffect } from "react";
 import { useQuery, useMutation } from "@apollo/client";
-import { FETCH_CHORES, UPDATE_CHORE } from "../../services";
+import { DELETE_CHORE, FETCH_CHORES, UPDATE_CHORE } from "../services";
 import { CircularProgress } from "@material-ui/core";
-import NewChore from "./NewChore";
+import ChoreControl from "./ChoreControl";
+import omit from "lodash/omit";
 
 const filterConfig = [
   { name: "All", where: {} },
@@ -29,6 +30,9 @@ const ChoresList = () => {
   const [filterConfigIndex, setFilterConfigIndex] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [perPage, setPerPage] = useState(5);
+  const [currentChore, setCurrentChore] = useState(null);
+
+  const newChoreModalRef = useRef(null);
 
   const {
     loading,
@@ -42,8 +46,9 @@ const ChoresList = () => {
       where: filterConfig[filterConfigIndex].where,
     },
   }) || {};
+  const [deleteChore] = useMutation(DELETE_CHORE);
   const [updateChore] = useMutation(UPDATE_CHORE);
-  const newChoreModalRef = useRef(null);
+
   const { numPages } = useMemo(() => {
     if (apolloData?.choresConnection) {
       const {
@@ -60,12 +65,18 @@ const ChoresList = () => {
     updateChore({
       variables: {
         id: currentId,
-        completed: chore.completed,
-        content: chore.content,
+        data: omit(chore, ["id", "createdAt", "updatedAt", "__typename"]),
       },
     });
   };
 
+  const onDeleteChore = (currentId) => {
+    deleteChore({
+      variables: {
+        id: currentId,
+      },
+    });
+  };
   const onPaginationChange = (_, page) => {
     setCurrentPage(page);
   };
@@ -97,9 +108,12 @@ const ChoresList = () => {
       <IconButton
         color="primary"
         component="span"
-        onClick={() => newChoreModalRef.current.open()}
+        onClick={() => {
+          setCurrentChore(null);
+          newChoreModalRef.current.open();
+        }}
       >
-        <SendIcon />
+        <AddIcon />
       </IconButton>
     </Box>
   );
@@ -172,6 +186,8 @@ const ChoresList = () => {
                   flipId={chore.id}
                   chore={chore}
                   onUpdateChore={onUpdateChore}
+                  onChoreClick={setCurrentChore}
+                  onDeleteChore={onDeleteChore}
                 />
               );
             })}
@@ -192,7 +208,8 @@ const ChoresList = () => {
           </Box>
         )}
       </Section>
-      <NewChore
+      <ChoreControl
+        chore={currentChore}
         ref={newChoreModalRef}
         fetchMore={fetchMore}
         sortConfig={sortConfig}
@@ -200,14 +217,6 @@ const ChoresList = () => {
         perPage={perPage}
         setCurrentPage={setCurrentPage}
       />
-      {/* <PreviewChore
-        ref={newChoreModalRef}
-        fetchMore={fetchMore}
-        sortConfig={sortConfig}
-        sortConfigIndex={sortConfigIndex}
-        perPage={perPage}
-        setCurrentPage={setCurrentPage}
-      /> */}
     </Box>
   );
 };

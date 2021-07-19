@@ -6,15 +6,8 @@ import DeleteIcon from "@material-ui/icons/Delete";
 import EditIcon from "@material-ui/icons/Edit";
 import SaveIcon from "@material-ui/icons/Save";
 import CancelIcon from "@material-ui/icons/Cancel";
-import CssTextField from "../CssTextField";
-
-const useStateChore = (defaultValue) => {
-  const [stateChore, setStateChore] = useState(defaultValue);
-  const updateStateChore = (newValue) => {
-    setStateChore((prevStateChore) => ({ ...prevStateChore, ...newValue }));
-  };
-  return [stateChore, updateStateChore];
-};
+import CssTextField from "../components/CssTextField";
+import { useStateChore } from "./utils";
 
 const Task = ({ flipId, chore, ...props }, _) => {
   const [focused, setIsFocused] = useState(false);
@@ -93,16 +86,25 @@ const Task = ({ flipId, chore, ...props }, _) => {
             inputProps={{ "aria-label": "primary checkbox" }}
           />
           <Box className="task-sub-container">
-            <Typography color="white" width="80%">
-              {stateChore.title}
-            </Typography>
+            <Box display="flex" flexDirection="column" width="80%">
+              <Typography color="white" width="100%">
+                {stateChore.title}
+              </Typography>
+              <Typography color="secondary" width="100%" variant="caption">
+                {stateChore.description}
+              </Typography>
+            </Box>
             <Box display="flex">
               {focused && (
                 <IconButton color="primary" component="span" onClick={onEdit}>
                   <EditIcon />
                 </IconButton>
               )}
-              <IconButton color="primary" component="span">
+              <IconButton
+                color="primary"
+                component="span"
+                onClick={() => props.onDeleteChore(chore.id)}
+              >
                 <DeleteIcon />
               </IconButton>
             </Box>

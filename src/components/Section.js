@@ -2,9 +2,15 @@ import React from "react";
 import Box from "@material-ui/core/Box";
 import { Typography } from "@material-ui/core";
 
-const Section = ({ title, children, className, renderRightComponent }) => {
+const Section = ({
+  title,
+  children,
+  containerClassName,
+  className,
+  renderRightComponent,
+}) => {
   return (
-    <Box className="section-container">
+    <Box className={`section-container ${containerClassName}`}>
       <Box display="flex" justifyContent="space-between" width="100%">
         {!!title && (
           <Typography variant="h6" color="white">

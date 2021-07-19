@@ -1,9 +1,15 @@
 import "./App.css";
-import Chores from "./components/index";
 import React from "react";
+import ChoresList from "./ChoresList/index";
 
 function App() {
-  return <Chores />;
+  return (
+    <div className="App">
+      <header className="App-header">
+        <ChoresList />
+      </header>
+    </div>
+  );
 }
 
 export default App;

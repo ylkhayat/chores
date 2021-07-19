@@ -25,7 +25,7 @@ export const FETCH_CHORES = gql`
 `;
 
 export const UPDATE_CHORE = gql`
-  mutation UpdateChore($data: ChoreCreateInput!, $id: ID!) {
+  mutation UpdateChore($data: ChoreUpdateInput!, $id: ID!) {
     updateChore(data: $data, where: { id: $id }) {
       id
       completed
@@ -64,6 +64,20 @@ export const CREATE_CHORE = gql`
 export const PUBLISH_CHORE = gql`
   mutation PublishChore($id: ID!) {
     publishChore(where: { id: $id }, to: PUBLISHED) {
+      completed
+      title
+      description
+      dueDate
+      createdAt
+      id
+      updatedAt
+    }
+  }
+`;
+
+export const DELETE_CHORE = gql`
+  mutation DeleteChore($id: ID!) {
+    deleteChore(where: { id: $id }) {
       completed
       title
       description
