@@ -12,6 +12,7 @@ import { DELETE_CHORE, FETCH_CHORES, UPDATE_CHORE } from "../services";
 import { CircularProgress } from "@material-ui/core";
 import ChoreControl from "./ChoreControl";
 import omit from "lodash/omit";
+import { useNotifier } from "./utils";
 
 const filterConfig = [
   { name: "All", where: {} },
@@ -20,9 +21,10 @@ const filterConfig = [
 ];
 
 const sortConfig = [
-  { name: "Content", orderBy: "content_ASC" },
+  { name: "Title", orderBy: "title_ASC" },
   { name: "Completed", orderBy: "completed_DESC" },
   { name: "Date Modified", orderBy: "createdAt_ASC" },
+  { name: "Due Date", orderBy: "dueDate_ASC" },
 ];
 
 const ChoresList = () => {
@@ -46,6 +48,8 @@ const ChoresList = () => {
       where: filterConfig[filterConfigIndex].where,
     },
   }) || {};
+  useNotifier({ chores: apolloData?.chores });
+
   const [deleteChore] = useMutation(DELETE_CHORE);
   const [updateChore] = useMutation(UPDATE_CHORE);
 
@@ -78,6 +82,14 @@ const ChoresList = () => {
       variables: {
         id: currentId,
       },
+    }).then(() => {
+      fetchMore?.({
+        variables: {
+          orderBy: sortConfig[sortConfigIndex].orderBy,
+        },
+      }).then(() => {
+        setCurrentPage(1);
+      });
     });
   };
   const onPaginationChange = (_, page) => {
@@ -95,6 +107,8 @@ const ChoresList = () => {
       setCurrentPage(1);
     });
   }, [sortConfigIndex, filterConfigIndex, perPage, fetchMore]);
+
+  useEffect(() => {}, [apolloData?.chores]);
 
   useEffect(() => {
     fetchMore?.({

@@ -11,6 +11,8 @@ import { Controller, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import format from "date-fns/format";
+import parseISO from "date-fns/parseISO";
+import formatDistance from "date-fns/formatDistance";
 
 const schema = yup.object().shape({
   title: yup.string().required("Title is required"),
@@ -67,11 +69,14 @@ const Content = forwardRef(
       resolver: yupResolver(schema),
       mode: "onChange",
     });
-    console.log(
-      format(chore?.dueDate, "yyyy-MM-dd'T'HH:mm", {
-        awareOfUnicodeTokens: true,
-      })
-    );
+    let defaultISODateTime = parseISO(chore?.dueDate);
+    let formatedDefaultDateTime = "";
+    if (!isNaN(defaultISODateTime.getTime())) {
+      formatedDefaultDateTime = format(
+        defaultISODateTime,
+        "yyyy-MM-dd'T'hh:mm"
+      );
+    } else formatedDefaultDateTime = "";
     const [createChore] = useMutation(CREATE_CHORE);
     const [publishChore] = useMutation(PUBLISH_CHORE);
 
@@ -171,9 +176,7 @@ const Content = forwardRef(
             <Controller
               name="dueDate"
               control={control}
-              // defaultValue={
-              //   isPreview ? format(chore?.dueDate, "yyyy-MM-dd HH:mm") : ""
-              // }
+              defaultValue={isPreview ? formatedDefaultDateTime : ""}
               render={({ field }) => (
                 <CssTextField
                   color="primary"
@@ -216,6 +219,14 @@ const Content = forwardRef(
               <Typography color="error">{errors.completed.message}</Typography>
             )}
           </Box>
+          {isPreview && (
+            <Typography color="secondary">
+              Remaining:{" "}
+              {formatDistance(defaultISODateTime, new Date(), {
+                includeSeconds: true,
+              })}
+            </Typography>
+          )}
           <Box display="flex" alignSelf="flex-end" width="100%" marginY="10px">
             <IconButton color="primary" onClick={() => setOpen(false)}>
               <CancelIcon />

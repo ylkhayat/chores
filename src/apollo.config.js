@@ -10,7 +10,6 @@ const apolloClient = new ApolloClient({
             keyArgs: false,
             merge(existing, incoming, { args: { offset = 0 } }) {
               let merged = [];
-              console.log(offset);
               if (!offset || offset === 0) {
                 merged = incoming ?? [];
               } else {

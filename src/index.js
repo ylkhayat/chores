@@ -1,12 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import "./index.css";
+import "react-toastify/dist/ReactToastify.css";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import { createTheme, ThemeProvider } from "@material-ui/core";
 import lightBlue from "@material-ui/core/colors/lightBlue";
 import { ApolloProvider } from "@apollo/client";
 import apolloClient from "./apollo.config";
+import { ToastContainer } from "react-toastify";
 
 const theme = createTheme({
   typography: {
@@ -22,6 +24,7 @@ ReactDOM.render(
     <ThemeProvider theme={theme}>
       <ApolloProvider client={apolloClient}>
         <App />
+        <ToastContainer />
       </ApolloProvider>
     </ThemeProvider>
   </React.StrictMode>,
