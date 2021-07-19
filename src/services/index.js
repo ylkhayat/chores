@@ -35,15 +35,6 @@ export const UPDATE_CHORE = gql`
       createdAt
       updatedAt
     }
-    publishChore(where: { id: $id }, to: PUBLISHED) {
-      completed
-      title
-      description
-      dueDate
-      createdAt
-      updatedAt
-      id
-    }
   }
 `;
 

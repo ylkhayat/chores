@@ -5,10 +5,12 @@ import React, { forwardRef, useImperativeHandle, useState } from "react";
 import { CREATE_CHORE, PUBLISH_CHORE } from "../services";
 import CssTextField from "../components/CssTextField";
 import Section from "../components/Section";
-import SendIcon from "@material-ui/icons/Send";
+import SaveIcon from "@material-ui/icons/Save";
+import CancelIcon from "@material-ui/icons/Cancel";
 import { Controller, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import format from "date-fns/format";
 
 const schema = yup.object().shape({
   title: yup.string().required("Title is required"),
@@ -44,14 +46,19 @@ const NewChore = (props, ref) => {
 };
 
 const Content = forwardRef(
-  ({
-    fetchMore,
-    sortConfig,
-    sortConfigIndex,
-    perPage,
-    setCurrentPage,
-    setOpen,
-  }) => {
+  (
+    {
+      fetchMore,
+      sortConfig,
+      sortConfigIndex,
+      perPage,
+      setCurrentPage,
+      setOpen,
+      chore,
+      onUpdateChore,
+    },
+    _
+  ) => {
     const {
       handleSubmit,
       control,
@@ -60,16 +67,20 @@ const Content = forwardRef(
       resolver: yupResolver(schema),
       mode: "onChange",
     });
-
+    console.log(
+      format(chore?.dueDate, "yyyy-MM-dd'T'HH:mm", {
+        awareOfUnicodeTokens: true,
+      })
+    );
     const [createChore] = useMutation(CREATE_CHORE);
     const [publishChore] = useMutation(PUBLISH_CHORE);
 
+    const isPreview = !!chore;
+
     const onSubmit = (data) => {
-      createChore({
-        variables: { data: data },
-      }).then((res) => {
-        publishChore({ variables: { id: res.data.createChore.id } }).then(
-          () => {
+      if (isPreview)
+        onUpdateChore(chore.id, data).then(() => {
+          publishChore({ variables: { id: chore.id } }).then(() => {
             fetchMore({
               variables: {
                 orderBy: sortConfig[sortConfigIndex].orderBy,
@@ -80,9 +91,27 @@ const Content = forwardRef(
               );
               setOpen(false);
             });
-          }
-        );
-      });
+          });
+        });
+      else
+        createChore({
+          variables: { data: data },
+        }).then((res) => {
+          publishChore({ variables: { id: res.data.createChore.id } }).then(
+            () => {
+              fetchMore({
+                variables: {
+                  orderBy: sortConfig[sortConfigIndex].orderBy,
+                },
+              }).then(({ data }) => {
+                setCurrentPage(
+                  Math.ceil(data.choresConnection.aggregate.count / perPage)
+                );
+                setOpen(false);
+              });
+            }
+          );
+        });
     };
 
     return (
@@ -91,14 +120,14 @@ const Content = forwardRef(
         className="new-chore-container"
       >
         <Typography color="white" variant="h5">
-          New Chore
+          {isPreview ? "Chore Preview" : "New Chore"}
         </Typography>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Box margin="10px">
             <Controller
               name="title"
               control={control}
-              defaultValue=""
+              defaultValue={isPreview ? chore?.title : ""}
               render={({ field }) => (
                 <CssTextField
                   color="primary"
@@ -119,7 +148,7 @@ const Content = forwardRef(
             <Controller
               name="description"
               control={control}
-              defaultValue=""
+              defaultValue={isPreview ? chore?.description : ""}
               render={({ field }) => (
                 <CssTextField
                   color="primary"
@@ -142,11 +171,13 @@ const Content = forwardRef(
             <Controller
               name="dueDate"
               control={control}
-              defaultValue=""
+              // defaultValue={
+              //   isPreview ? format(chore?.dueDate, "yyyy-MM-dd HH:mm") : ""
+              // }
               render={({ field }) => (
                 <CssTextField
                   color="primary"
-                  type="date"
+                  type="datetime-local"
                   variant="outlined"
                   label="Due Date"
                   inputProps={{
@@ -171,7 +202,7 @@ const Content = forwardRef(
             <Controller
               name="completed"
               control={control}
-              defaultValue={false}
+              defaultValue={isPreview ? chore?.completed : false}
               render={({ field }) => (
                 <Checkbox
                   checked={field.value}
@@ -186,8 +217,11 @@ const Content = forwardRef(
             )}
           </Box>
           <Box display="flex" alignSelf="flex-end" width="100%" marginY="10px">
+            <IconButton color="primary" onClick={() => setOpen(false)}>
+              <CancelIcon />
+            </IconButton>
             <IconButton color="primary" onClick={handleSubmit(onSubmit)}>
-              <SendIcon />
+              <SaveIcon />
             </IconButton>
           </Box>
         </form>

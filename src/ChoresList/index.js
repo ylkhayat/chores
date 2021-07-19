@@ -61,15 +61,18 @@ const ChoresList = () => {
     }
   }, [apolloData?.choresConnection, perPage]);
 
-  const onUpdateChore = (currentId, chore) => {
+  const onUpdateChore = (currentId, chore) =>
     updateChore({
       variables: {
         id: currentId,
         data: omit(chore, ["id", "createdAt", "updatedAt", "__typename"]),
       },
     });
-  };
 
+  const onChoreClick = (chore) => {
+    setCurrentChore(chore);
+    newChoreModalRef.current.open();
+  };
   const onDeleteChore = (currentId) => {
     deleteChore({
       variables: {
@@ -186,7 +189,7 @@ const ChoresList = () => {
                   flipId={chore.id}
                   chore={chore}
                   onUpdateChore={onUpdateChore}
-                  onChoreClick={setCurrentChore}
+                  onChoreClick={onChoreClick}
                   onDeleteChore={onDeleteChore}
                 />
               );
@@ -216,6 +219,7 @@ const ChoresList = () => {
         sortConfigIndex={sortConfigIndex}
         perPage={perPage}
         setCurrentPage={setCurrentPage}
+        onUpdateChore={onUpdateChore}
       />
     </Box>
   );
