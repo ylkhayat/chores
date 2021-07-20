@@ -8,11 +8,17 @@ import { useMemo, useRef, useState } from "react";
 import Pagination from "@material-ui/core/Pagination";
 import React, { useEffect } from "react";
 import { useQuery, useMutation } from "@apollo/client";
-import { DELETE_CHORE, FETCH_CHORES, UPDATE_CHORE } from "../services";
+import {
+  DELETE_CHORE,
+  FETCH_CHORES,
+  PUBLISH_CHORE,
+  UPDATE_CHORE,
+} from "../services";
 import { CircularProgress } from "@material-ui/core";
 import ChoreControl from "./ChoreControl";
 import omit from "lodash/omit";
 import { useNotifier } from "./utils";
+import Dialog from "./Dialog";
 
 const filterConfig = [
   { name: "All", where: {} },
@@ -35,6 +41,7 @@ const ChoresList = () => {
   const [currentChore, setCurrentChore] = useState(null);
 
   const newChoreModalRef = useRef(null);
+  const dialogRef = useRef(null);
 
   const {
     loading,
@@ -52,6 +59,7 @@ const ChoresList = () => {
 
   const [deleteChore] = useMutation(DELETE_CHORE);
   const [updateChore] = useMutation(UPDATE_CHORE);
+  const [publishChore] = useMutation(PUBLISH_CHORE);
 
   const { numPages } = useMemo(() => {
     if (apolloData?.choresConnection) {
@@ -71,6 +79,18 @@ const ChoresList = () => {
         id: currentId,
         data: omit(chore, ["id", "createdAt", "updatedAt", "__typename"]),
       },
+    }).then(() => {
+      publishChore({ variables: { id: chore.id } }).then(() => {
+        fetchMore({
+          variables: {
+            orderBy: sortConfig[sortConfigIndex].orderBy,
+          },
+        }).then(({ data }) => {
+          setCurrentPage(
+            Math.ceil(data.choresConnection.aggregate.count / perPage)
+          );
+        });
+      });
     });
 
   const onChoreClick = (chore) => {
@@ -78,24 +98,30 @@ const ChoresList = () => {
     newChoreModalRef.current.open();
   };
   const onDeleteChore = (currentId) => {
-    deleteChore({
-      variables: {
-        id: currentId,
+    dialogRef.current?.open({
+      message: "Are you sure you want to delete this chore?",
+      onOk: () => {
+        deleteChore({
+          variables: {
+            id: currentId,
+          },
+        }).then(() => {
+          fetchMore?.({
+            variables: {
+              orderBy: sortConfig[sortConfigIndex].orderBy,
+            },
+          }).then(() => {
+            setCurrentPage(1);
+          });
+        });
       },
-    }).then(() => {
-      fetchMore?.({
-        variables: {
-          orderBy: sortConfig[sortConfigIndex].orderBy,
-        },
-      }).then(() => {
-        setCurrentPage(1);
-      });
+      onCancel: () => {},
     });
   };
   const onPaginationChange = (_, page) => {
     setCurrentPage(page);
   };
-
+  console.log(dialogRef);
   useEffect(() => {
     fetchMore?.({
       variables: {
@@ -235,6 +261,7 @@ const ChoresList = () => {
         setCurrentPage={setCurrentPage}
         onUpdateChore={onUpdateChore}
       />
+      <Dialog ref={dialogRef} />
     </Box>
   );
 };
