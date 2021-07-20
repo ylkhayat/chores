@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Typography from "@material-ui/core/Typography";
 import Checkbox from "@material-ui/core/Checkbox";
 import { Box, IconButton, Tooltip } from "@material-ui/core";
@@ -12,6 +12,10 @@ import { differenceInMinutes, formatDistance, parseISO } from "date-fns";
 const Task = ({ flipId, chore, ...props }, _) => {
   const [focused, setIsFocused] = useState(false);
   const [stateChore, setStateChore] = useStateChore(chore);
+
+  useEffect(() => {
+    setStateChore(chore);
+  }, [chore, setStateChore]);
 
   const onToggleComplete = () => {
     props.onUpdateChore(stateChore.id, {

@@ -57,9 +57,15 @@ const ChoresList = () => {
   }) || {};
   useNotifier({ chores: apolloData?.chores });
 
-  const [deleteChore] = useMutation(DELETE_CHORE);
-  const [updateChore] = useMutation(UPDATE_CHORE);
-  const [publishChore] = useMutation(PUBLISH_CHORE);
+  const [deleteChore] = useMutation(DELETE_CHORE, {
+    onError: (_) => {},
+  });
+  const [updateChore] = useMutation(UPDATE_CHORE, {
+    onError: (_) => {},
+  });
+  const [publishChore] = useMutation(PUBLISH_CHORE, {
+    onError: (_) => {},
+  });
 
   const { numPages } = useMemo(() => {
     if (apolloData?.choresConnection) {
@@ -80,7 +86,7 @@ const ChoresList = () => {
         data: omit(chore, ["id", "createdAt", "updatedAt", "__typename"]),
       },
     }).then(() => {
-      publishChore({ variables: { id: chore.id } }).then(() => {
+      publishChore({ variables: { id: currentId } }).then(() => {
         fetchMore({
           variables: {
             orderBy: sortConfig[sortConfigIndex].orderBy,
@@ -121,7 +127,6 @@ const ChoresList = () => {
   const onPaginationChange = (_, page) => {
     setCurrentPage(page);
   };
-  console.log(dialogRef);
   useEffect(() => {
     fetchMore?.({
       variables: {

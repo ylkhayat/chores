@@ -13,6 +13,7 @@ import * as yup from "yup";
 import format from "date-fns/format";
 import parseISO from "date-fns/parseISO";
 import formatDistance from "date-fns/formatDistance";
+import { differenceInMinutes } from "date-fns";
 
 const schema = yup.object().shape({
   title: yup.string().required("Title is required"),
@@ -69,34 +70,30 @@ const Content = forwardRef(
       resolver: yupResolver(schema),
       mode: "onChange",
     });
+    let minutesLeft = null;
     let defaultISODateTime = parseISO(chore?.dueDate);
     let formatedDefaultDateTime = "";
     if (!isNaN(defaultISODateTime.getTime())) {
+      minutesLeft = differenceInMinutes(parseISO(chore?.dueDate), new Date(), {
+        includeSeconds: true,
+      });
       formatedDefaultDateTime = format(
         defaultISODateTime,
         "yyyy-MM-dd'T'hh:mm"
       );
     } else formatedDefaultDateTime = "";
-    const [createChore] = useMutation(CREATE_CHORE);
-    const [publishChore] = useMutation(PUBLISH_CHORE);
-
+    const [createChore] = useMutation(CREATE_CHORE, {
+      onError: (_) => {},
+    });
+    const [publishChore] = useMutation(PUBLISH_CHORE, {
+      onError: (_) => {},
+    });
     const isPreview = !!chore;
 
     const onSubmit = (data) => {
       if (isPreview)
         onUpdateChore(chore.id, data).then(() => {
-          publishChore({ variables: { id: chore.id } }).then(() => {
-            fetchMore({
-              variables: {
-                orderBy: sortConfig[sortConfigIndex].orderBy,
-              },
-            }).then(({ data }) => {
-              setCurrentPage(
-                Math.ceil(data.choresConnection.aggregate.count / perPage)
-              );
-              setOpen(false);
-            });
-          });
+          setOpen(false);
         });
       else
         createChore({
@@ -221,7 +218,7 @@ const Content = forwardRef(
           </Box>
           {isPreview && (
             <Typography color="secondary">
-              Remaining:{" "}
+              {minutesLeft > 0 ? "Remaining" : "Past due"}:{" "}
               {formatDistance(defaultISODateTime, new Date(), {
                 includeSeconds: true,
               })}

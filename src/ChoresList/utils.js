@@ -1,16 +1,16 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import parseISO from "date-fns/parseISO";
 import differenceInMinutes from "date-fns/differenceInMinutes";
 
 const useStateChore = (defaultValue) => {
   const [stateChore, setStateChore] = useState(defaultValue);
-  const updateStateChore = (newValue) => {
+  const updateStateChore = useCallback((newValue) => {
     setStateChore((prevStateChore) => ({ ...prevStateChore, ...newValue }));
-  };
-  const resetStateChore = () => {
+  }, []);
+  const resetStateChore = useCallback(() => {
     setStateChore({});
-  };
+  }, []);
   return [stateChore, updateStateChore, resetStateChore];
 };
 
